@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Michael Kim 영어 학습 앱</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#1B3A6B 0%,#7C3AED 60%,#0E7490 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;}
+  .app{width:100%;max-width:520px;}
+  .card{background:#fff;border-radius:24px;padding:28px 24px;box-shadow:0 8px 40px rgba(0,0,0,0.25);}
+  .header{text-align:center;margin-bottom:18px;}
+  .header h1{font-size:1.3rem;color:#1B3A6B;font-weight:800;}
+  .header p{font-size:.85rem;color:#7C3AED;margin-top:4px;}
+  .stage-badge{display:inline-block;background:linear-gradient(90deg,#7C3AED,#0E7490);color:#fff;border-radius:20px;padding:4px 16px;font-size:.8rem;font-weight:700;margin-bottom:10px;}
+  .progress-bar{background:#e5e7eb;border-radius:8px;height:8px;margin-bottom:18px;}
+  .progress-fill{background:linear-gradient(90deg,#7C3AED,#0E7490);height:8px;border-radius:8px;transition:width .4s;}
+  .score-display{display:flex;justify-content:space-between;font-size:.85rem;color:#6b7280;margin-bottom:6px;}
+  .question-box{background:#f5f3ff;border-radius:14px;padding:18px;margin-bottom:16px;text-align:center;}
+  .question-box .q-label{font-size:.75rem;color:#7C3AED;font-weight:700;margin-bottom:6px;}
+  .question-box .q-text{font-size:1.2rem;color:#1B3A6B;font-weight:800;}
+  .attempt-dots{display:flex;justify-content:center;gap:8px;margin-bottom:14px;}
+  .dot{width:12px;height:12px;border-radius:50%;background:#e5e7eb;}
+  .dot.used{background:#ef4444;}
+  .dot.active{background:#7C3AED;}
+  .options{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+  .opt-btn{background:#f9fafb;border:2px solid #e5e7eb;border-radius:12px;padding:12px 16px;font-size:.95rem;cursor:pointer;text-align:left;transition:all .2s;color:#1B3A6B;font-weight:600;}
+  .opt-btn:hover{border-color:#7C3AED;background:#f5f3ff;}
+  .opt-btn.correct{border-color:#10b981;background:#d1fae5;color:#065f46;}
+  .opt-btn.wrong{border-color:#ef4444;background:#fee2e2;color:#991b1b;}
+  .chip-area{display:flex;flex-wrap:wrap;gap:8px;min-height:48px;background:#f0fdf4;border:2px dashed #0E7490;border-radius:12px;padding:10px;margin-bottom:10px;align-items:center;}
+  .chip-bank{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .chip{background:linear-gradient(135deg,#7C3AED,#1B3A6B);color:#fff;border-radius:20px;padding:7px 14px;font-size:.9rem;cursor:pointer;font-weight:600;transition:all .2s;border:none;}
+  .chip:hover{opacity:.85;transform:scale(1.05);}
+  .chip.placed{background:#0E7490;}
+  .chip.disabled{opacity:.4;cursor:not-allowed;}
+  .input-row{display:flex;gap:8px;margin-bottom:14px;}
+  .input-row input{flex:1;border:2px solid #e5e7eb;border-radius:10px;padding:10px 14px;font-size:.95rem;color:#1B3A6B;outline:none;transition:border .2s;}
+  .input-row input:focus{border-color:#7C3AED;}
+  .btn{border:none;border-radius:12px;padding:11px 20px;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s;}
+  .btn-primary{background:linear-gradient(90deg,#7C3AED,#0E7490);color:#fff;}
+  .btn-primary:hover{opacity:.88;}
+  .btn-secondary{background:#e5e7eb;color:#1B3A6B;}
+  .btn-secondary:hover{background:#d1d5db;}
+  .btn-danger{background:#ef4444;color:#fff;}
+  .feedback{border-radius:12px;padding:12px 16px;margin-bottom:14px;font-weight:700;text-align:center;font-size:1rem;}
+  .feedback.correct{background:#d1fae5;color:#065f46;}
+  .feedback.wrong{background:#fee2e2;color:#991b1b;}
+  .feedback.info{background:#e0f2fe;color:#0c4a6e;}
+  .result-card{text-align:center;}
+  .score-big{font-size:3.5rem;font-weight:900;color:#7C3AED;line-height:1;}
+  .grade-badge{display:inline-block;background:linear-gradient(90deg,#7C3AED,#0E7490);color:#fff;border-radius:20px;padding:6px 22px;font-size:1.1rem;font-weight:800;margin:10px 0;}
+  .mistake-list{text-align:left;margin-top:14px;max-height:220px;overflow-y:auto;}
+  .mistake-item{background:#fff7ed;border-left:4px solid #f97316;border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:.82rem;color:#1B3A6B;}
+  .mistake-item .mi-q{font-weight:700;color:#7C3AED;margin-bottom:2px;}
+  .mistake-item .mi-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .mi-wrong{color:#ef4444;}
+  .mi-right{color:#10b981;}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px;}
+  .tts-icon{font-size:1.1rem;margin-right:4px;}
+  .clear-btn{background:none;border:none;color:#0E7490;font-size:.8rem;cursor:pointer;text-decoration:underline;margin-bottom:6px;}
+  @media(max-width:400px){.card{padding:18px 12px;}.chip{font-size:.8rem;padding:6px 10px;}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="card" id="mainCard">
+    <div class="header">
+      <h1>🏆 Michael Kim 영어 학습</h1>
+      <p>반려동물 (Pets) 단원</p>
+    </div>
+    <div id="appBody"></div>
+  </div>
+</div>
+
+<script>
+// ===== 학습 데이터 =====
+const SENTENCES = [
+  { ko:"그는 한 마리의 앵무새를 가지고 있습니다.", en:"He has a parrot." },
+  { ko:"그녀는 두 마리의 햄스터를 가지고 있습니다.", en:"She has two hamsters." },
+  { ko:"내 친구들은 반려동물을 가지고 있습니다.", en:"My friends have pets." },
+  { ko:"그는 세 마리의 이구아나를 가지고 있습니다.", en:"He has three iguanas." },
+  { ko:"Peter는 앵무새를 좋아합니다.", en:"Peter likes parrots." },
+  { ko:"그녀는 두 마리의 뱀을 가지고 있습니다.", en:"She has two snakes." }
+];
+
+// Stage1: 단어 스펠링 퀴즈 (핵심 단어)
+const Q_DATA = [
+  { q:"앵무새", a:"parrot",  opts:["parrot","rabbit","lizard","hamster","snake"] },
+  { q:"햄스터", a:"hamster", opts:["iguana","hamster","parrot","snake","rabbit"] },
+  { q:"반려동물", a:"pets",  opts:["snake","pets","friends","iguanas","parrots"] },
+  { q:"이구아나", a:"iguana", opts:["hamster","parrot","snake","iguana","rabbit"] },
+  { q:"뱀",     a:"snake",  opts:["pets","iguana","snake","hamster","parrot"] },
+  { q:"좋아하다", a:"likes", opts:["have","has","likes","want","need"] }
+];
+
+// Stage2: 문장 순서 배열
+const K_DATA = SENTENCES.map(s=>{
+  const words = s.en.replace(/[.?!,]/g,'').split(' ');
+  return { ko: s.ko, words: words, answer: s.en };
+});
+
+// Stage3: 본문 이해 퀴즈
+const S_DATA = [
+  {
+    type:"mc",
+    q:"그는 몇 마리의 앵무새를 가지고 있나요?",
+    opts:["한 마리","두 마리","세 마리","네 마리"],
+    a:"한 마리"
+  },
+  {
+    type:"mc",
+    q:"그녀가 가지고 있는 햄스터는 몇 마리인가요?",
+    opts:["한 마리","두 마리","세 마리","네 마리"],
+    a:"두 마리"
+  },
+  {
+    type:"sa",
+    q:"내 친구들은 무엇을 가지고 있나요? (영어로 쓰세요)",
+    a:"pets"
+  },
+  {
+    type:"mc",
+    q:"그는 이구아나를 몇 마리 가지고 있나요?",
+    opts:["한 마리","두 마리","세 마리","네 마리"],
+    a:"세 마리"
+  },
+  {
+    type:"mc",
+    q:"Peter는 무엇을 좋아하나요?",
+    opts:["hamsters","snakes","iguanas","parrots"],
+    a:"parrots"
+  },
+  {
+    type:"sa",
+    q:"그녀가 가지고 있는 뱀의 수를 영어로 쓰세요.",
+    a:"two"
+  }
+];
+
+// ===== 앱 상태 =====
+let stage = 0; // 0=intro,1=spelling,2=order,3=study,4=result
+let qIdx = 0;
+let totalScore = 0;
+let attempt = 0;
+let mistakeLog = [];
+let chipSelected = [];
+let currentData = [];
+let perQ = 0;
+
+// ===== TTS =====
+function speak(text){
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang='en-US'; u.rate=0.9;
+  window.speechSynthesis.speak(u);
+}
+function speakKo(text){
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang='ko-KR'; u.rate=0.9;
+  window.speechSynthesis.speak(u);
+}
+
+// ===== 정규화 =====
+function norm(s){
+  return s.toLowerCase().trim().replace(/[.?!,]/g,'');
+}
+
+// ===== 셔플 =====
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+// 정답이 특정 번호에 편중되지 않도록 옵션 배열
+function arrangeOpts(opts, answer, targetIdx){
+  const others = opts.filter(o=>o!==answer);
+  const shuffledOthers = shuffle(others);
+  const result = [...shuffledOthers];
+  result.splice(targetIdx, 0, answer);
+  return result.slice(0,5);
+}
+
+// ===== 렌더 함수 =====
+const body = document.getElementById('appBody');
+
+function render(html){ body.innerHTML = html; }
+
+function progressHTML(cur, total, stageLabel){
+  const pct = total>0 ? Math.round((cur/total)*100) : 0;
+  return `
+    <div class="stage-badge">${stageLabel}</div>
+    <div class="score-display">
+      <span>문제 ${cur}/${total}</span>
+      <span>점수: <b>${Math.round(totalScore)}</b>점</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+  `;
+}
+
+function dotsHTML(attempt){
+  let d='<div class="attempt-dots">';
+  for(let i=0;i<3;i++){
+    if(i<attempt) d+=`<div class="dot used"></div>`;
+    else if(i===attempt) d+=`<div class="dot active"></div>`;
+    else d+=`<div class="dot"></div>`;
+  }
+  return d+'</div>';
+}
+
+// ===== INTRO =====
+function showIntro(){
+  stage=0;
+  render(`
+    <div style="text-align:center;padding:10px 0;">
+      <div style="font-size:3rem;margin-bottom:10px;">🐾</div>
+      <h2 style="color:#1B3A6B;font-size:1.2rem;margin-bottom:8px;">반려동물 (Pets) 단원</h2>
+      <p style="color:#6b7280;font-size:.9rem;margin-bottom:20px;">3단계 학습으로 영어 실력을 키워요!</p>
+      <div style="background:#f5f3ff;border-radius:14px;padding:16px;margin-bottom:20px;text-align:left;">
+        <div style="font-weight:700;color:#7C3AED;margin-bottom:8px;">📚 학습 단계</div>
+        <div style="font-size:.9rem;color:#1B3A6B;line-height:1.8;">
+          <b>Stage 1</b> 🔤 Spelling — 단어 맞추기<br>
+          <b>Stage 2</b> 👑 Order King — 문장 순서 배열<br>
+          <b>Stage 3</b> 📖 Study — 본문 이해 퀴즈
+        </div>
+      </div>
+      <button class="btn btn-primary" id="startBtn" style="width:100%;font-size:1rem;padding:14px;">🚀 학습 시작!</button>
+    </div>
+  `);
+  document.getElementById('startBtn').addEventListener('click',()=>{
+    startStage1();
+  });
+}
+
+// ===== STAGE 1: SPELLING =====
+function startStage1(){
+  stage=1; qIdx=0; attempt=0;
+  currentData = Q_DATA.map((item,i)=>{
+    // 정답 위치를 0~4 순환 배분
+    const targetIdx = i % 5;
+    return { ...item, arrangedOpts: arrangeOpts(item.opts, item.a, targetIdx) };
+  });
+  perQ = 100 / currentData.length;
+  showSpelling();
+}
+
+function showSpelling(){
+  if(qIdx >= currentData.length){ startStage2(); return; }
+  const item = currentData[qIdx];
+  attempt=0;
+  renderSpelling(item);
+}
+
+function renderSpelling(item, feedback='', disabledIdxs=[]){
+  let optsHTML='';
+  item.arrangedOpts.forEach((opt,i)=>{
+    const num=['①','②','③','④','⑤'][i];
+    const dis = disabledIdxs.includes(i) ? 'disabled' : '';
+    const cls = disabledIdxs.includes(i) ? (opt===item.a?'correct':'wrong') : '';
+    optsHTML+=`<button class="opt-btn ${cls}" data-idx="${i}" ${dis}>${num} ${opt}</button>`;
+  });
+  let fbHTML = feedback ? `<div class="feedback ${feedback.type}">${feedback.msg}</div>` : '';
+  render(`
+    ${progressHTML(qIdx+1, currentData.length, '🔤 Stage 1 · Spelling')}
+    ${dotsHTML(attempt)}
+    <div class="question-box">
+      <div class="q-label">한글 뜻을 보고 영어 단어를 고르세요</div>
+      <div class="q-text">${item.q}</div>
+    </div>
+    ${fbHTML}
+    <div class="options" id="optArea">${optsHTML}</div>
+  `);
+  document.querySelectorAll('.opt-btn:not([disabled])').forEach(btn=>{
+    btn.addEventListener('click', ()=>checkSpelling(item, parseInt(btn.dataset.idx)));
+  });
+}
+
+function checkSpelling(item, idx){
+  const chosen = item.arrangedOpts[idx];
+  attempt++;
+  if(norm(chosen)===norm(item.a)){
+    const weight = attempt===1?1.0:attempt===2?0.7:0.4;
+    totalScore += perQ * weight;
+    speak("Great!");
+    renderSpelling(item,{type:'correct',msg:`✅ 정답! "${item.a}" 맞아요! 🎉`},[idx]);
+    setTimeout(()=>{ qIdx++; attempt=0; showSpelling(); },1200);
+  } else {
+    mistakeLog.push({q:item.q, user:chosen, correct:item.a, try:attempt});
+    if(attempt>=3){
+      speak("Oh No!");
+      renderSpelling(item,{type:'wrong',msg:`❌ 정답은 "${item.a}" 입니다.`},
+        item.arrangedOpts.map((_,i)=>i));
+      setTimeout(()=>{ qIdx++; attempt=0; showSpelling(); },1800);
+    } else {
+      speak("Oh No!");
+      renderSpelling(item,{type:'wrong',msg:`❌ 틀렸어요! ${3-attempt}번 남았어요.`},[idx]);
+    }
+  }
+}
+
+// ===== STAGE 2: ORDER KING =====
+function startStage2(){
+  stage=2; qIdx=0; attempt=0;
+  currentData = K_DATA.map(item=>({
+    ...item,
+    shuffledWords: shuffle(item.words)
+  }));
+  perQ = 100 / currentData.length;
+  showOrder();
+}
+
+function showOrder(){
+  if(qIdx >= currentData.length){ startStage3(); return; }
+  chipSelected=[];
+  attempt=0;
+  renderOrder();
+}
+
+function renderOrder(feedback=''){
+  const item = currentData[qIdx];
+  const remaining = item.shuffledWords.filter(w=>!chipSelected.includes(w) ||
+    chipSelected.filter(c=>c===w).length < item.shuffledWords.filter(c=>c===w).length);
+
+  // 배치된 칩
+  let placedHTML = chipSelected.length===0
+    ? '<span style="color:#9ca3af;font-size:.85rem;">단어를 클릭해서 문장을 만드세요</span>'
+    : chipSelected.map((w,i)=>`<span class="chip placed" data-placed="${i}">${w}</span>`).join('');
+
+  // 남은 칩 (중복 단어 처리)
+  const usedCount={};
+  chipSelected.forEach(w=>{ usedCount[w]=(usedCount[w]||0)+1; });
+  const totalCount={};
+  item.shuffledWords.forEach(w=>{ totalCount[w]=(totalCount[w]||0)+1; });
+  let bankHTML='';
+  const shownCount={};
+  item.shuffledWords.forEach((w,i)=>{
+    shownCount[w]=(shownCount[w]||0)+1;
+    const used = usedCount[w]||0;
+    const total = totalCount[w];
+    const disabled = shownCount[w] <= used ? 'disabled' : '';
+    bankHTML+=`<button class="chip${disabled?' disabled':''}" data-word="${w}" data-bankidx="${i}" ${disabled}>${w}</button>`;
+  });
+
+  let fbHTML = feedback ? `<div class="feedback ${feedback.type}">${feedback.msg}</div>` : '';
+  render(`
+    ${progressHTML(qIdx+1, currentData.length, '👑 Stage 2 · Order King')}
+    ${dotsHTML(attempt)}
+    <div class="question-box">
+      <div class="q-label">한글 뜻을 보고 영어 문장을 완성하세요</div>
+      <div class="q-text">${item.ko}</div>
+    </div>
+    ${fbHTML}
+    <div class="chip-area" id="placedArea">${placedHTML}</div>
+    <button class="clear-btn" id="clearBtn">↩ 다시 배열하기</button>
+    <div class="chip-bank" id="bankArea">${bankHTML}</div>
+    <button class="btn btn-primary" id="checkOrderBtn" style="width:100%;">✅ 확인</button>
+  `);
+
+  document.getElementById('clearBtn').addEventListener('click',()=>{
+    chipSelected=[];
+    renderOrder();
+  });
+
+  document.querySelectorAll('#bankArea .chip:not(.disabled)').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      chipSelected.push(btn.dataset.word);
+      renderOrder();
+    });
+  });
+
+  document.querySelectorAll('#placedArea .chip').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const i=parseInt(btn.dataset.placed);
+      chipSelected.splice(i,1);
+      renderOrder();
+    });
+  });
+
+  document.getElementById('checkOrderBtn').addEventListener('click',()=>checkOrder(item));
+}
+
+function checkOrder(item){
+  if(chipSelected.length===0) return;
+  attempt++;
+  // 첫 글자 대문자 처리 후 비교
+  const userSentence = chipSelected.join(' ');
+  const userNorm = norm(userSentence);
+  const ansSentence = item.words.join(' ');
+  const ansNorm = norm(ansSentence);
+
+  if(userNorm===ansNorm){
+    const weight = attempt===1?1.0:attempt===2?0.7:0.4;
+    totalScore += perQ * weight;
+    speak("Great!");
+    // 정답 문장 첫 글자 대문자
+    const displaySentence = chipSelected.map((w,i)=>i===0?w.charAt(0).toUpperCase()+w.slice(1):w).join(' ');
+    renderOrder({type:'correct',msg:`✅ 정답! "${displaySentence}" 🎉`});
+    setTimeout(()=>{ qIdx++; showOrder(); },1400);
+  } else {
+    const displayUser = chipSelected.map((w,i)=>i===0?w.charAt(0).toUpperCase()+w.slice(1):w).join(' ');
+    mistakeLog.push({q:item.ko, user:displayUser+'.', correct:item.answer, try:attempt});
+    if(attempt>=3){
+      speak("Oh No!");
+      renderOrder({type:'wrong',msg:`❌ 정답: "${item.answer}"`});
+      setTimeout(()=>{ qIdx++; showOrder(); },2000);
+    } else {
+      speak("Oh No!");
+      chipSelected=[];
+      renderOrder({type:'wrong',msg:`❌ 틀렸어요! ${3-attempt}번 남았어요. 다시 해보세요!`});
+    }
+  }
+}
+
+// ===== STAGE 3: STUDY =====
+function startStage3(){
+  stage=3; qIdx=0; attempt=0;
+  // 정답 번호 분산
+  currentData = S_DATA.map((item,i)=>{
+    if(item.type==='mc'){
+      const targetIdx = i % item.opts.length;
+      return { ...item, arrangedOpts: arrangeOpts(item.opts, item.a, targetIdx) };
+    }
+    return {...item};
+  });
+  perQ = 100 / currentData.length;
+  showStudy();
+}
+
+function showStudy(){
+  if(qIdx >= currentData.length){ showResult(); return; }
+  attempt=0;
+  renderStudy();
+}
+
+function renderStudy(feedback=''){
+  const item = currentData[qIdx];
+  let inputHTML='';
+  if(item.type==='mc'){
+    let optsHTML='';
+    const opts = item.arrangedOpts || item.opts;
+    opts.forEach((opt,i)=>{
+      const num=['①','②','③','④','⑤'][i];
+      optsHTML+=`<button class="opt-btn" data-val="${opt}">${num} ${opt}</button>`;
+    });
+    inputHTML=`<div class="options" id="mcArea">${optsHTML}</div>`;
+  } else {
+    inputHTML=`
+      <div class="input-row">
+        <input type="text" id="saInput" placeholder="영어로 입력하세요..." autocomplete="off"/>
+        <button class="btn btn-primary" id="saBtn">확인</button>
+      </div>
+    `;
+  }
+  let fbHTML = feedback ? `<div class="feedback ${feedback.type}">${feedback.msg}</div>` : '';
+  render(`
+    ${progressHTML(qIdx+1, currentData.length, '📖 Stage 3 · Study')}
+    ${dotsHTML(attempt)}
+    <div class="question-box">
+      <div class="q-label">본문을 떠올리며 답하세요</div>
+      <div class="q-text" style="font-size:1rem;">${item.q}</div>
+    </div>
+    ${fbHTML}
+    ${inputHTML}
+  `);
+
+  if(item.type==='mc'){
+    document.querySelectorAll('#mcArea .opt-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>checkStudy(item, btn.dataset.val));
+    });
+  } else {
+    const saBtn=document.getElementById('saBtn');
+    const saInput=document.getElementById('saInput');
+    saBtn.addEventListener('click',()=>checkStudy(item, saInput.value));
+    saInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter') checkStudy(item, saInput.value); });
+    saInput.focus();
+  }
+}
+
+function checkStudy(item, chosen){
+  attempt++;
+  if(norm(chosen)===norm(item.a)){
+    const weight = attempt===1?1.0:attempt===2?0.7:0.4;
+    totalScore += perQ * weight;
+    speak("Great!");
+    renderStudy({type:'correct',msg:`✅ 정답! "${item.a}" 맞아요! 🎉`});
+    setTimeout(()=>{ qIdx++; attempt=0; showStudy(); },1200);
+  } else {
+    mistakeLog.push({q:item.q, user:chosen||'(미입력)', correct:item.a, try:attempt});
+    if(attempt>=3){
+      speak("Oh No!");
+      renderStudy({type:'wrong',msg:`❌ 정답은 "${item.a}" 입니다.`});
+      setTimeout(()=>{ qIdx++; attempt=0; showStudy(); },1800);
+    } else {
+      speak("Oh No!");
+      renderStudy({type:'wrong',msg:`❌ 틀렸어요! ${3-attempt}번 남았어요.`});
+    }
+  }
+}
+
+// ===== 결과 =====
+function getGrade(score){
+  if(score>=95) return {g:'S',emoji:'🏆',msg:'완벽해요! 최고!'};
+  if(score>=85) return {g:'A',emoji:'🥇',msg:'훌륭해요!'};
+  if(score>=75) return {g:'B',emoji:'🥈',msg:'잘했어요!'};
+  if(score>=60) return {g:'C',emoji:'🥉',msg:'조금 더 노력해요!'};
+  return {g:'D',emoji:'💪',msg:'다시 도전해봐요!'};
+}
+
+function showResult(){
+  speak("Retire");
+  const finalScore = Math.min(100, Math.round(totalScore));
+  const {g,emoji,msg} = getGrade(finalScore);
+
+  let mistakeHTML = '';
+  if(mistakeLog.length===0){
+    mistakeHTML='<div style="color:#10b981;font-weight:700;text-align:center;padding:10px;">🎉 오답이 없어요! 완벽합니다!</div>';
+  } else {
+    mistakeHTML = mistakeLog.map((m,i)=>`
+      <div class="mistake-item">
+        <div class="mi-q">${i+1}. ${m.q} <span style="color:#9ca3af;font-size:.75rem;">(${m.try}회차)</span></div>
+        <div class="mi-row">
+          <span class="mi-wrong">✗ ${m.user}</span>
+          <span style="color:#9ca3af;">→</span>
+          <span class="mi-right">✓ ${m.correct}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  render(`
+    <div class="result-card" id="resultArea">
+      <div style="font-size:2.5rem;margin-bottom:6px;">${emoji}</div>
+      <div class="score-big">${finalScore}<span style="font-size:1.5rem;color:#9ca3af;">점</span></div>
+      <div class="grade-badge">등급 ${g} · ${msg}</div>
+      <div style="color:#6b7280;font-size:.85rem;margin-bottom:14px;">총 ${Q_DATA.length+K_DATA.length+S_DATA.length}문제 완료</div>
+      <div style="text-align:left;font-weight:700;color:#1B3A6B;margin-bottom:8px;">📋 오답 리스트 (${mistakeLog.length}개)</div>
+      <div class="mistake-list">${mistakeHTML}</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="saveBtn">📸 성적표 저장 (JPG)</button>
+      <button class="btn btn-secondary" id="retryBtn">🔄 다시 시작</button>
+    </div>
+  `);
+
+  document.getElementById('saveBtn').addEventListener('click', saveResult);
+  document.getElementById('retryBtn').addEventListener('click', ()=>{
+    totalScore=0; mistakeLog=[]; qIdx=0; attempt=0;
+    showIntro();
+  });
+}
+
+function saveResult(){
+  const el = document.getElementById('resultArea');
+  html2canvas(el,{scale:2,backgroundColor:'#ffffff'}).then(canvas=>{
+    const link=document.createElement('a');
+    link.download='성적표.jpg';
+    link.href=canvas.toDataURL('image/jpeg',0.95);
+    link.click();
+  });
+}
+
+// ===== 시작 =====
+showIntro();
+</script>
+</body>
+</html>
