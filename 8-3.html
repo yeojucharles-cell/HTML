@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>👋 Hello & Ages — Michael Kim</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root {
+    --purple: #7C3AED;
+    --navy: #1B3A6B;
+    --teal: #0E7490;
+    --purple-light: #A78BFA;
+    --teal-light: #22D3EE;
+    --bg: #0F172A;
+    --card: #1E293B;
+    --card2: #263248;
+    --text: #F1F5F9;
+    --sub: #94A3B8;
+    --correct: #10B981;
+    --wrong: #EF4444;
+    --warn: #F59E0B;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; display: flex;
+    flex-direction: column; align-items: center; padding: 16px;
+  }
+  h1 {
+    font-size: 1.5rem;
+    background: linear-gradient(135deg, var(--purple-light), var(--teal-light));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    text-align: center; margin-bottom: 4px;
+  }
+  .subtitle { color: var(--sub); font-size: 0.85rem; text-align: center; margin-bottom: 18px; }
+
+  .card {
+    background: var(--card); border-radius: 18px; padding: 24px;
+    width: 100%; max-width: 640px;
+    box-shadow: 0 8px 32px rgba(124,58,237,0.18);
+    border: 1px solid rgba(124,58,237,0.2);
+  }
+
+  .progress-wrap { width: 100%; max-width: 640px; margin-bottom: 14px; }
+  .progress-label {
+    display: flex; justify-content: space-between;
+    font-size: 0.78rem; color: var(--sub); margin-bottom: 6px;
+  }
+  .progress-bar-bg { background: var(--card2); border-radius: 99px; height: 8px; overflow: hidden; }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--purple), var(--teal));
+    border-radius: 99px; transition: width 0.4s;
+  }
+
+  .stage-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--purple), var(--navy));
+    border-radius: 99px; padding: 4px 14px;
+    font-size: 0.78rem; font-weight: 700; letter-spacing: 1px;
+    margin-bottom: 12px; color: var(--purple-light);
+    border: 1px solid var(--purple);
+  }
+
+  .score-row { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .score-box {
+    background: var(--card2); border-radius: 10px;
+    padding: 6px 16px; font-size: 0.9rem; font-weight: 700;
+    color: var(--teal-light); border: 1px solid var(--teal);
+  }
+  .tries-box { display: flex; gap: 6px; align-items: center; }
+  .try-dot {
+    width: 13px; height: 13px; border-radius: 50%;
+    background: var(--card2); border: 2px solid var(--sub); transition: all 0.2s;
+  }
+  .try-dot.used { background: var(--wrong); border-color: var(--wrong); }
+
+  .q-num { font-size: 0.75rem; color: var(--sub); margin-bottom: 4px; font-weight: 600; letter-spacing: 0.5px; }
+  .q-meaning { font-size: 1.25rem; font-weight: 800; color: var(--teal-light); margin-bottom: 6px; letter-spacing: 0.3px; line-height: 1.5; }
+  .q-sub { font-size: 0.82rem; color: var(--sub); margin-bottom: 18px; }
+  .q-text {
+    font-size: 1.05rem; font-weight: 600; color: var(--text);
+    margin-bottom: 18px; line-height: 1.7;
+    font-family: 'Segoe UI', sans-serif; letter-spacing: normal;
+  }
+
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .opt-btn {
+    background: var(--card2); border: 2px solid rgba(124,58,237,0.3);
+    border-radius: 12px; padding: 13px 18px;
+    color: var(--text); font-size: 1rem;
+    cursor: pointer; text-align: left; transition: all 0.18s;
+    font-family: 'Segoe UI', sans-serif; letter-spacing: normal;
+  }
+  .opt-btn.spelling { font-family: 'Courier New', monospace; letter-spacing: 1px; }
+  .opt-btn:hover { border-color: var(--purple); background: rgba(124,58,237,0.15); }
+  .opt-btn.correct { border-color: var(--correct); background: rgba(16,185,129,0.15); color: var(--correct); }
+  .opt-btn.wrong   { border-color: var(--wrong);   background: rgba(239,68,68,0.12);  color: var(--wrong);   }
+  .opt-btn:disabled { pointer-events: none; opacity: 0.65; }
+
+  .chip-area {
+    min-height: 58px; background: var(--card2);
+    border-radius: 12px; padding: 10px 12px;
+    display: flex; flex-wrap: wrap; gap: 8px;
+    border: 2px dashed rgba(124,58,237,0.35);
+    margin-bottom: 12px; transition: border-color 0.2s;
+  }
+  .chip-area.has-chips { border-color: var(--purple); }
+  .chip {
+    border-radius: 8px; padding: 7px 14px;
+    font-size: 0.95rem; cursor: pointer;
+    user-select: none; transition: all 0.15s; font-weight: 600;
+  }
+  .chip:hover  { transform: scale(1.08); }
+  .chip:active { transform: scale(0.96); opacity: 0.8; }
+  .chip-answer {
+    background: linear-gradient(135deg, var(--purple), var(--navy));
+    border: 1px solid var(--purple-light); color: #fff;
+  }
+  .chip-bank-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .chip-bank-item { background: var(--card2); border: 1px solid var(--teal); color: var(--teal-light); }
+
+  .answer-input {
+    width: 100%; background: var(--card2);
+    border: 2px solid rgba(124,58,237,0.4);
+    border-radius: 12px; padding: 13px 16px;
+    color: var(--text); font-size: 1rem;
+    outline: none; transition: border 0.2s; margin-bottom: 10px;
+  }
+  .answer-input:focus { border-color: var(--purple); }
+
+  .btn {
+    border: none; border-radius: 12px; padding: 11px 26px;
+    font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.18s;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--purple), var(--teal)); color: #fff; }
+  .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn-secondary { background: var(--card2); color: var(--purple-light); border: 1px solid var(--purple); }
+  .btn-secondary:hover { background: rgba(124,58,237,0.15); }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+
+  .feedback {
+    border-radius: 10px; padding: 11px 16px;
+    font-size: 0.92rem; font-weight: 600;
+    margin-top: 14px; display: none; white-space: pre-line; line-height: 1.5;
+  }
+  .feedback.show { display: block; }
+  .feedback.ok   { background: rgba(16,185,129,0.15); color: var(--correct); border: 1px solid var(--correct); }
+  .feedback.err  { background: rgba(239,68,68,0.10);  color: var(--wrong);   border: 1px solid var(--wrong);   }
+  .feedback.info { background: rgba(245,158,11,0.12); color: var(--warn);    border: 1px solid var(--warn);    }
+
+  #intro-screen { text-align: center; }
+  .intro-icon { font-size: 3rem; margin-bottom: 10px; }
+  .intro-desc { color: var(--sub); font-size: 0.9rem; line-height: 1.75; margin-bottom: 20px; }
+  .stage-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
+  .stage-item {
+    background: var(--card2); border-radius: 10px;
+    padding: 11px 16px; display: flex; align-items: center; gap: 12px;
+    border: 1px solid rgba(124,58,237,0.2);
+  }
+  .stage-icon { font-size: 1.4rem; }
+  .stage-name { font-weight: 700; color: var(--purple-light); font-size: 0.95rem; }
+  .stage-desc { color: var(--sub); font-size: 0.8rem; margin-top: 2px; }
+
+  #report-card {
+    background: var(--card); border-radius: 18px; padding: 28px;
+    width: 100%; max-width: 640px;
+    box-shadow: 0 8px 32px rgba(124,58,237,0.18);
+    border: 1px solid rgba(124,58,237,0.2);
+  }
+  .report-title {
+    font-size: 1.4rem; font-weight: 800; text-align: center;
+    background: linear-gradient(135deg, var(--purple-light), var(--teal-light));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 4px;
+  }
+  .report-meta { text-align: center; color: var(--sub); font-size: 0.82rem; margin-bottom: 6px; }
+  .report-score { font-size: 3.2rem; font-weight: 900; text-align: center; color: var(--teal-light); margin: 8px 0 4px; }
+  .report-grade { text-align: center; font-size: 1.25rem; font-weight: 700; margin-bottom: 18px; }
+  .mistake-section-title { font-size: 0.88rem; color: var(--sub); margin-bottom: 10px; }
+  .mistake-item {
+    background: var(--card2); border-radius: 10px;
+    padding: 11px 14px; margin-bottom: 8px;
+    font-size: 0.86rem; border-left: 3px solid var(--wrong);
+  }
+  .mistake-q       { color: var(--sub); margin-bottom: 5px; font-size: 0.82rem; }
+  .mistake-user    { color: var(--wrong); margin-bottom: 3px; }
+  .mistake-correct { color: var(--correct); }
+
+  @media (max-width: 480px) {
+    .card, #report-card { padding: 16px; }
+    .q-meaning { font-size: 1.05rem; }
+    .report-score { font-size: 2.4rem; }
+  }
+</style>
+</head>
+<body>
+
+<h1>👋 Hello & Ages</h1>
+<p class="subtitle">Michael Kim's English Learning App · Order Master v2.8</p>
+
+<!-- ===== INTRO ===== -->
+<div class="card" id="intro-screen">
+  <div class="intro-icon">🌟</div>
+  <h2 style="margin-bottom:10px; color:var(--purple-light);">학습을 시작합니다!</h2>
+  <p class="intro-desc">
+    인사말과 나이 표현에 관한 영어를 3단계로 학습합니다.<br>
+    각 단계를 완료하면 최종 성적표를 확인할 수 있어요.
+  </p>
+  <div class="stage-list">
+    <div class="stage-item">
+      <span class="stage-icon">🔤</span>
+      <div>
+        <div class="stage-name">Stage 1 · Spelling</div>
+        <div class="stage-desc">한글 뜻 보고 올바른 영어 철자 고르기 (5지선다)</div>
+      </div>
+    </div>
+    <div class="stage-item">
+      <span class="stage-icon">👑</span>
+      <div>
+        <div class="stage-name">Stage 2 · Order King</div>
+        <div class="stage-desc">한글 뜻 보고 단어 칩으로 문장 완성하기</div>
+      </div>
+    </div>
+    <div class="stage-item">
+      <span class="stage-icon">📖</span>
+      <div>
+        <div class="stage-name">Stage 3 · Study</div>
+        <div class="stage-desc">본문 이해 퀴즈 (객관식 + 주관식, 한국어 질문)</div>
+      </div>
+    </div>
+  </div>
+  <button class="btn btn-primary" id="start-btn" style="width:100%;font-size:1.05rem;padding:14px;">
+    🚀 학습 시작하기
+  </button>
+</div>
+
+<!-- ===== QUIZ AREA ===== -->
+<div id="quiz-area" style="display:none; width:100%; max-width:640px;">
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span id="prog-label">Stage 1 · Spelling · 1 / 24</span>
+      <span id="prog-pct">0%</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="prog-bar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="stage-badge" id="stage-badge">STAGE 1 · SPELLING</div>
+    <div class="score-row">
+      <div class="score-box" id="score-box">Score: 0</div>
+      <div class="tries-box">
+        <div class="try-dot" id="dot1"></div>
+        <div class="try-dot" id="dot2"></div>
+        <div class="try-dot" id="dot3"></div>
+      </div>
+    </div>
+
+    <div class="q-num" id="q-num">Q 1 / 24</div>
+    <div class="q-meaning" id="q-meaning"></div>
+    <div class="q-sub" id="q-sub"></div>
+    <div class="q-text" id="q-text" style="display:none;"></div>
+
+    <div id="options-area" class="options"></div>
+
+    <div id="order-area" style="display:none;">
+      <div class="chip-area" id="answer-chips"></div>
+      <div class="chip-bank-wrap" id="word-bank"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="check-order-btn">✅ 확인</button>
+        <button class="btn btn-secondary" id="reset-order-btn">🔄 초기화</button>
+      </div>
+    </div>
+
+    <div id="input-area" style="display:none;">
+      <input class="answer-input" id="answer-input" type="text" placeholder="영어로 답을 입력하고 Enter 키를 누르세요...">
+      <div class="btn-row">
+        <button class="btn btn-primary" id="check-input-btn">✅ 확인</button>
+      </div>
+    </div>
+
+    <div class="feedback" id="feedback-box"></div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn btn-secondary" id="next-btn" style="display:none;">다음 문제 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== REPORT ===== -->
+<div id="report-card" style="display:none;">
+  <div class="report-title">📊 최종 성적표</div>
+  <div class="report-meta">Michael Kim's English Class · Hello &amp; Ages</div>
+  <div class="report-score" id="final-score">0점</div>
+  <div class="report-grade" id="final-grade"></div>
+  <hr style="border-color:rgba(124,58,237,0.2); margin:14px 0;">
+  <div class="mistake-section-title">📝 오답 노트 (대답 vs 정답)</div>
+  <div id="mistake-list"></div>
+  <div class="btn-row" style="margin-top:20px; justify-content:center;">
+    <button class="btn btn-primary" id="save-jpg-btn">💾 JPG 저장</button>
+    <button class="btn btn-secondary" id="retry-btn">🔁 다시 시작</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  Q_DATA — Stage 1: Spelling
+//  ★ 한글 뜻만 제시, 스펠링 힌트 절대 없음
+// ============================================================
+const Q_DATA = [
+  {
+    word: "everyone",
+    meaning: "모두, 여러분",
+    distractors: ["everione", "evreyone", "everryone", "everyonne"]
+  },
+  {
+    word: "hello",
+    meaning: "안녕하세요 (격식 인사)",
+    distractors: ["helo", "hallo", "helllo", "heloo"]
+  },
+  {
+    word: "years",
+    meaning: "년, 살 (나이 단위)",
+    distractors: ["yeras", "yars", "yeers", "yearrs"]
+  },
+  {
+    word: "old",
+    meaning: "~살의, 나이 든",
+    distractors: ["ald", "oled", "oldd", "uld"]
+  },
+  {
+    word: "seven",
+    meaning: "일곱, 7",
+    distractors: ["sevan", "sevon", "seben", "sevven"]
+  },
+  {
+    word: "eight",
+    meaning: "여덟, 8",
+    distractors: ["eigt", "eigth", "eiight", "eihgt"]
+  },
+  {
+    word: "nine",
+    meaning: "아홉, 9",
+    distractors: ["nien", "nyne", "naine", "ninne"]
+  },
+  {
+    word: "ten",
+    meaning: "열, 10",
+    distractors: ["tan", "tne", "tenn", "tean"]
+  },
+  {
+    word: "here",
+    meaning: "여기에",
+    distractors: ["hear", "heer", "hare", "herre"]
+  },
+  {
+    word: "too",
+    meaning: "~도, 또한",
+    distractors: ["to", "tow", "tooo", "tuo"]
+  },
+];
+
+// ============================================================
+//  K_DATA — Stage 2: Order King
+//  ★ 한글 뜻만 제시, 괄호 단어들을 칩으로 구성
+// ============================================================
+const K_DATA = [
+  {
+    sentence: "This is for you.",
+    meaning:  "이것은 여러분을 위한 것입니다."
+  },
+  {
+    sentence: "Hello, I'm six years old.",
+    meaning:  "안녕하세요, 나는 여섯 살입니다."
+  },
+  {
+    sentence: "Hi, I'm seven years old.",
+    meaning:  "안녕하세요, 나는 일곱 살입니다."
+  },
+  {
+    sentence: "Hello, I'm eight years old.",
+    meaning:  "안녕하세요, 나는 여덟 살입니다."
+  },
+  {
+    sentence: "Hi, I'm nine years old.",
+    meaning:  "안녕하세요, 나는 아홉 살입니다."
+  },
+  {
+    sentence: "Ha ha! I'm ten years old.",
+    meaning:  "하하! 나는 열 살입니다."
+  },
+  {
+    sentence: "Hey, I'm here too.",
+    meaning:  "저기, 나도 여기 있습니다."
+  },
+];
+
+// ============================================================
+//  S_DATA — Stage 3: Study Quiz
+//  ★ 질문은 모두 한국어로만 작성
+// ============================================================
+const S_DATA = [
+  {
+    type: "mc",
+    q: "다음 중 '이것은 여러분을 위한 것입니다.'와 같은 뜻의 문장은?",
+    options: [
+      "This is for you.",
+      "This is for me.",
+      "This is for him.",
+      "This is for her.",
+    ],
+    answer: "This is for you.",
+  },
+  {
+    type: "mc",
+    q: "'안녕하세요, 나는 여섯 살입니다.'를 영어로 바르게 표현한 것은?",
+    options: [
+      "Hello, I'm six years old.",
+      "Hello, I'm seven years old.",
+      "Hi, I'm six years old.",
+      "Hey, I'm six years old.",
+    ],
+    answer: "Hello, I'm six years old.",
+  },
+  {
+    type: "mc",
+    q: "'저기, 나도 여기 있습니다.'에서 '~도, 또한'에 해당하는 영어 단어는?",
+    options: [
+      "too",
+      "here",
+      "hey",
+      "also",
+    ],
+    answer: "too",
+  },
+  {
+    type: "mc",
+    q: "다음 중 나이를 표현하는 문장의 형태로 올바른 것은?",
+    options: [
+      "I'm + 숫자 + years old.",
+      "I'm + 숫자 + year old.",
+      "I am + 숫자 + years.",
+      "I + 숫자 + years old.",
+    ],
+    answer: "I'm + 숫자 + years old.",
+  },
+  {
+    type: "mc",
+    q: "'Ha ha! I'm ten years old.'에서 사용된 인사/감탄 표현은?",
+    options: [
+      "Ha ha",
+      "Hello",
+      "Hey",
+      "Hi",
+    ],
+    answer: "Ha ha",
+  },
+  {
+    type: "sa",
+    q: "'안녕하세요, 나는 아홉 살입니다.'를 영어로 쓰세요. (Hi로 시작)",
+    answer: "Hi I'm nine years old",
+  },
+  {
+    type: "sa",
+    q: "'저기, 나도 여기 있습니다.'를 영어로 쓰세요. (Hey로 시작)",
+    answer: "Hey I'm here too",
+  },
+];
+
+// ============================================================
+//  STATE
+// ============================================================
+let currentQ       = 0;
+let currentAttempt = 0;
+let totalScore     = 0;
+let mistakeLog     = [];
+let allQuestions   = [];
+let orderAnswer    = [];
+let orderBank      = [];
+let isAutoMoving   = false;
+
+const TOTAL_Q = Q_DATA.length + K_DATA.length + S_DATA.length;
+const PER_Q   = 100 / TOTAL_Q;
+
+function buildQuestions() {
+  allQuestions = [];
+  Q_DATA.forEach((d, i) => allQuestions.push({ stage: 1, idx: i, data: d }));
+  K_DATA.forEach((d, i) => allQuestions.push({ stage: 2, idx: i, data: d }));
+  S_DATA.forEach((d, i) => allQuestions.push({ stage: 3, idx: i, data: d }));
+}
+
+// ============================================================
+//  TTS
+// ============================================================
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US"; u.rate = 0.95;
+  window.speechSynthesis.speak(u);
+}
+const ttsGreat  = () => speak("Great job!");
+const ttsOhNo   = () => speak("Oh no, try again!");
+const ttsRetire = () => speak("Well done! You have completed all stages. Check your score!");
+
+// ============================================================
+//  NORM — 대소문자·공백·문장부호 제거
+// ============================================================
+function norm(str) {
+  return str.toLowerCase().replace(/[.?!,]/g, "").trim();
+}
+
+// ============================================================
+//  SCORE
+// ============================================================
+function calcScore(attempt) {
+  return PER_Q * ([1.0, 0.7, 0.4][attempt - 1] || 0);
+}
+
+// ============================================================
+//  UI HELPERS
+// ============================================================
+function showFeedback(type, msg) {
+  const fb = document.getElementById("feedback-box");
+  fb.className = `feedback show ${type}`;
+  fb.textContent = msg;
+}
+function hideFeedback() {
+  const fb = document.getElementById("feedback-box");
+  fb.className = "feedback";
+  fb.textContent = "";
+}
+function setDots(n) {
+  [1, 2, 3].forEach(i => {
+    document.getElementById("dot" + i).className =
+      "try-dot" + (i <= n ? " used" : "");
+  });
+}
+function updateProgress(qIdx) {
+  const pct = Math.round((qIdx / TOTAL_Q) * 100);
+  document.getElementById("prog-bar").style.width = pct + "%";
+  document.getElementById("prog-pct").textContent = pct + "%";
+  const s = allQuestions[qIdx]?.stage || 3;
+  const names = { 1: "Spelling", 2: "Order King", 3: "Study" };
+  document.getElementById("prog-label").textContent =
+    `Stage ${s} · ${names[s]} · ${qIdx + 1} / ${TOTAL_Q}`;
+}
+function updateScoreBox() {
+  document.getElementById("score-box").textContent = "Score: " + Math.round(totalScore);
+}
+function showNextBtn() { document.getElementById("next-btn").style.display = "inline-block"; }
+function hideNextBtn() { document.getElementById("next-btn").style.display = "none"; }
+
+function disableOptions() {
+  document.querySelectorAll("#options-area .opt-btn").forEach(b => { b.disabled = true; });
+}
+function highlightCorrectOpt(correct) {
+  document.querySelectorAll("#options-area .opt-btn").forEach(b => {
+    if (norm(b.textContent) === norm(correct)) b.classList.add("correct");
+  });
+}
+function lockAllInputs() {
+  disableOptions();
+  document.getElementById("check-order-btn").style.pointerEvents = "none";
+  document.getElementById("reset-order-btn").style.pointerEvents = "none";
+  const inp = document.getElementById("answer-input");
+  inp.disabled = true;
+  document.getElementById("check-input-btn").style.pointerEvents = "none";
+  hideNextBtn();
+}
+
+// ============================================================
+//  RENDER QUESTION
+// ============================================================
+function renderQuestion(qIdx) {
+  currentQ     = qIdx;
+  isAutoMoving = false;
+
+  if (qIdx >= allQuestions.length) { showReport(); return; }
+
+  currentAttempt = 0;
+  hideFeedback();
+  hideNextBtn();
+
+  const qObj = allQuestions[qIdx];
+  updateProgress(qIdx);
+  setDots(0);
+
+  const badges = {
+    1: "🔤 STAGE 1 · SPELLING",
+    2: "👑 STAGE 2 · ORDER KING",
+    3: "📖 STAGE 3 · STUDY"
+  };
+  document.getElementById("stage-badge").textContent = badges[qObj.stage];
+  document.getElementById("q-num").textContent = `Q ${qIdx + 1} / ${TOTAL_Q}`;
+
+  document.getElementById("q-meaning").textContent      = "";
+  document.getElementById("q-sub").textContent          = "";
+  document.getElementById("q-text").style.display       = "none";
+  document.getElementById("q-text").textContent         = "";
+  document.getElementById("options-area").style.display = "none";
+  document.getElementById("options-area").innerHTML     = "";
+  document.getElementById("order-area").style.display   = "none";
+  document.getElementById("input-area").style.display   = "none";
+
+  const inp = document.getElementById("answer-input");
+  inp.value    = "";
+  inp.disabled = false;
+  document.getElementById("check-input-btn").style.pointerEvents = "auto";
+  document.getElementById("check-order-btn").style.pointerEvents = "auto";
+  document.getElementById("reset-order-btn").style.pointerEvents = "auto";
+
+  if      (qObj.stage === 1) renderStage1(qObj, qIdx);
+  else if (qObj.stage === 2) renderStage2(qObj, qIdx);
+  else                       renderStage3(qObj, qIdx);
+}
+
+// ============================================================
+//  STAGE 1 — Spelling
+// ============================================================
+function renderStage1(qObj, qIdx) {
+  const { word, meaning, distractors } = qObj.data;
+
+  document.getElementById("q-meaning").textContent = meaning;
+  document.getElementById("q-sub").textContent     = "위 뜻에 해당하는 올바른 영어 철자를 고르세요.";
+
+  const opts = shuffle([word, ...distractors.slice(0, 4)]);
+  const area = document.getElementById("options-area");
+  area.style.display = "flex";
+
+  opts.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className   = "opt-btn spelling";
+    btn.textContent = opt;
+    btn.addEventListener("click", () => handleS1(opt, word, btn, qIdx));
+    area.appendChild(btn);
+  });
+}
+
+function handleS1(chosen, correct, btn, qIdx) {
+  if (currentAttempt >= 3 || isAutoMoving) return;
+  currentAttempt++;
+  setDots(currentAttempt);
+
+  if (norm(chosen) === norm(correct)) {
+    btn.classList.add("correct");
+    const pts = calcScore(currentAttempt);
+    totalScore += pts;
+    updateScoreBox();
+    showFeedback("ok", `✅ 정답! +${pts.toFixed(1)}점 획득`);
+    ttsGreat();
+    disableOptions();
+    showNextBtn();
+  } else {
+    btn.classList.add("wrong");
+    mistakeLog.push({
+      q:       `[Spelling] ${allQuestions[qIdx].data.meaning}`,
+      user:    chosen,
+      correct: correct,
+      try:     currentAttempt
+    });
+    if (currentAttempt >= 3) {
+      lockAllInputs();
+      highlightCorrectOpt(correct);
+      showFeedback("err", `❌ 3회 초과! 정답: ${correct}`);
+      speak("Oh no. The correct answer is " + correct);
+      isAutoMoving = true;
+      setTimeout(() => { renderQuestion(currentQ + 1); }, 2300);
+    } else {
+      showFeedback("err", `❌ 틀렸습니다. ${3 - currentAttempt}번 남았어요!`);
+      ttsOhNo();
+    }
+  }
+}
+
+// ============================================================
+//  STAGE 2 — Order King
+// ============================================================
+function renderStage2(qObj, qIdx) {
+  const { sentence, meaning } = qObj.data;
+
+  document.getElementById("q-meaning").textContent = meaning;
+  document.getElementById("q-sub").textContent     = "위 뜻에 맞게 단어 칩을 클릭하여 영어 문장을 완성하세요.";
+
+  const words = sentence.split(" ");
+  orderAnswer = [];
+  orderBank   = shuffle([...words]);
+
+  document.getElementById("order-area").style.display = "block";
+  renderChips();
+}
+
+function renderChips() {
+  const answerEl = document.getElementById("answer-chips");
+  const bankEl   = document.getElementById("word-bank");
+  answerEl.innerHTML = "";
+  bankEl.innerHTML   = "";
+
+  answerEl.className = "chip-area" + (orderAnswer.length > 0 ? " has-chips" : "");
+
+  orderAnswer.forEach((w, i) => {
+    const chip = document.createElement("div");
+    chip.className   = "chip chip-answer";
+    chip.textContent = w;
+    chip.addEventListener("click", () => {
+      if (isAutoMoving) return;
+      orderBank.push(orderAnswer.splice(i, 1)[0]);
+      renderChips();
+    });
+    answerEl.appendChild(chip);
+  });
+
+  orderBank.forEach((w, i) => {
+    const chip = document.createElement("div");
+    chip.className   = "chip chip-bank-item";
+    chip.textContent = w;
+    chip.addEventListener("click", () => {
+      if (isAutoMoving) return;
+      orderAnswer.push(orderBank.splice(i, 1)[0]);
+      renderChips();
+    });
+    bankEl.appendChild(chip);
+  });
+}
+
+function handleS2Check() {
+  if (orderAnswer.length === 0) {
+    showFeedback("info", "⚠️ 단어를 먼저 배열해주세요!");
+    return;
+  }
+  if (currentAttempt >= 3 || isAutoMoving) return;
+  currentAttempt++;
+  setDots(currentAttempt);
+
+  const correct = allQuestions[currentQ].data.sentence;
+  const userAns = orderAnswer.join(" ");
+
+  if (norm(userAns) === norm(correct)) {
+    const pts = calcScore(currentAttempt);
+    totalScore += pts;
+    updateScoreBox();
+    showFeedback("ok", `✅ 정답! +${pts.toFixed(1)}점\n"${correct}"`);
+    ttsGreat();
+    document.getElementById("check-order-btn").style.pointerEvents = "none";
+    document.getElementById("reset-order-btn").style.pointerEvents = "none";
+    showNextBtn();
+  } else {
+    mistakeLog.push({
+      q:       `[Order] ${allQuestions[currentQ].data.meaning}`,
+      user:    userAns,
+      correct: correct,
+      try:     currentAttempt
+    });
+    if (currentAttempt >= 3) {
+      lockAllInputs();
+      showFeedback("err", `❌ 3회 초과!\n정답: "${correct}"`);
+      speak("Oh no. The correct sentence is: " + correct);
+      isAutoMoving = true;
+      setTimeout(() => { renderQuestion(currentQ + 1); }, 2800);
+    } else {
+      showFeedback("err", `❌ 틀렸습니다. ${3 - currentAttempt}번 남았어요!`);
+      ttsOhNo();
+    }
+  }
+}
+
+// ============================================================
+//  STAGE 3 — Study Quiz (질문 한국어)
+// ============================================================
+function renderStage3(qObj, qIdx) {
+  const { type, q, options } = qObj.data;
+
+  document.getElementById("q-text").style.display = "block";
+  document.getElementById("q-text").textContent   = q;
+
+  if (type === "mc") {
+    const area = document.getElementById("options-area");
+    area.style.display = "flex";
+    shuffle([...options]).forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className   = "opt-btn";
+      btn.textContent = opt;
+      btn.addEventListener("click", () => handleS3MC(opt, qObj.data.answer, btn, qIdx));
+      area.appendChild(btn);
+    });
+  } else {
+    document.getElementById("input-area").style.display = "block";
+    const inp = document.getElementById("answer-input");
+    inp.value    = "";
+    inp.disabled = false;
+    setTimeout(() => inp.focus(), 100);
+  }
+}
+
+function handleS3MC(chosen, correct, btn, qIdx) {
+  if (currentAttempt >= 3 || isAutoMoving) return;
+  currentAttempt++;
+  setDots(currentAttempt);
+
+  if (norm(chosen) === norm(correct)) {
+    btn.classList.add("correct");
+    const pts = calcScore(currentAttempt);
+    totalScore += pts;
+    updateScoreBox();
+    showFeedback("ok", `✅ 정답! +${pts.toFixed(1)}점`);
+    ttsGreat();
+    disableOptions();
+    showNextBtn();
+  } else {
+    btn.classList.add("wrong");
+    mistakeLog.push({
+      q:       allQuestions[currentQ].data.q,
+      user:    chosen,
+      correct: correct,
+      try:     currentAttempt
+    });
+    if (currentAttempt >= 3) {
+      lockAllInputs();
+      highlightCorrectOpt(correct);
+      showFeedback("err", `❌ 3회 초과! 정답: "${correct}"`);
+      speak("Oh no. The correct answer is: " + correct);
+      isAutoMoving = true;
+      setTimeout(() => { renderQuestion(currentQ + 1); }, 2500);
+    } else {
+      showFeedback("err", `❌ 틀렸습니다. ${3 - currentAttempt}번 남았어요!`);
+      ttsOhNo();
+    }
+  }
+}
+
+function handleS3SA() {
+  const inp     = document.getElementById("answer-input");
+  const userAns = inp.value;
+  if (!userAns.trim() || isAutoMoving) return;
+  if (currentAttempt >= 3) return;
+  currentAttempt++;
+  setDots(currentAttempt);
+
+  const correct = allQuestions[currentQ].data.answer;
+
+  if (norm(userAns) === norm(correct)) {
+    const pts = calcScore(currentAttempt);
+    totalScore += pts;
+    updateScoreBox();
+    showFeedback("ok", `✅ 정답! +${pts.toFixed(1)}점`);
+    ttsGreat();
+    inp.disabled = true;
+    document.getElementById("check-input-btn").style.pointerEvents = "none";
+    showNextBtn();
+  } else {
+    mistakeLog.push({
+      q:       allQuestions[currentQ].data.q,
+      user:    userAns,
+      correct: correct,
+      try:     currentAttempt
+    });
+    if (currentAttempt >= 3) {
+      lockAllInputs();
+      showFeedback("err", `❌ 3회 초과! 정답: "${correct}"`);
+      speak("Oh no. The correct answer is: " + correct);
+      isAutoMoving = true;
+      setTimeout(() => { renderQuestion(currentQ + 1); }, 2500);
+    } else {
+      showFeedback("err", `❌ 틀렸습니다. ${3 - currentAttempt}번 남았어요!`);
+      ttsOhNo();
+      inp.value = "";
+      setTimeout(() => inp.focus(), 50);
+    }
+  }
+}
+
+// ============================================================
+//  REPORT
+// ============================================================
+function getGrade(s) {
+  if (s >= 95) return { g: "A+", emoji: "🏆", msg: "Outstanding!" };
+  if (s >= 90) return { g: "A",  emoji: "🥇", msg: "Excellent!" };
+  if (s >= 80) return { g: "B+", emoji: "🥈", msg: "Great job!" };
+  if (s >= 70) return { g: "B",  emoji: "👍", msg: "Good work!" };
+  if (s >= 60) return { g: "C+", emoji: "📚", msg: "Keep studying!" };
+  if (s >= 50) return { g: "C",  emoji: "💪", msg: "You can do it!" };
+  return              { g: "D",  emoji: "🔁", msg: "Try again!" };
+}
+
+function showReport() {
+  ttsRetire();
+  document.getElementById("quiz-area").style.display   = "none";
+  document.getElementById("report-card").style.display = "block";
+
+  const fs = Math.min(100, Math.round(totalScore));
+  const { g, emoji, msg } = getGrade(fs);
+
+  document.getElementById("final-score").textContent = fs + "점";
+  document.getElementById("final-grade").innerHTML =
+    `${emoji} <span style="color:var(--purple-light)">${g}</span> — ${msg}`;
+
+  const ml = document.getElementById("mistake-list");
+  ml.innerHTML = "";
+  if (mistakeLog.length === 0) {
+    ml.innerHTML = `<p style="color:var(--correct);text-align:center;padding:14px;">🎉 오답이 없습니다! 완벽해요!</p>`;
+  } else {
+    mistakeLog.forEach(m => {
+      const div = document.createElement("div");
+      div.className = "mistake-item";
+      div.innerHTML = `
+        <div class="mistake-q">❓ ${m.q} <span style="color:var(--warn)">(${m.try}차 시도)</span></div>
+        <div class="mistake-user">✗ 내 답: ${m.user}</div>
+        <div class="mistake-correct">✓ 정답: ${m.correct}</div>
+      `;
+      ml.appendChild(div);
+    });
+  }
+}
+
+// ============================================================
+//  SAVE JPG
+// ============================================================
+function saveJPG() {
+  html2canvas(document.getElementById("report-card"), {
+    backgroundColor: "#1E293B", scale: 2
+  }).then(canvas => {
+    const a = document.createElement("a");
+    a.download = "HelloAges_Report.jpg";
+    a.href = canvas.toDataURL("image/jpeg", 0.95);
+    a.click();
+  });
+}
+
+// ============================================================
+//  SHUFFLE
+// ============================================================
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ============================================================
+//  INIT & EVENT BINDING
+// ============================================================
+function init() {
+  buildQuestions();
+  currentQ       = 0;
+  totalScore     = 0;
+  mistakeLog     = [];
+  currentAttempt = 0;
+  isAutoMoving   = false;
+  updateScoreBox();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  init();
+
+  document.getElementById("start-btn").addEventListener("click", () => {
+    document.getElementById("intro-screen").style.display = "none";
+    document.getElementById("quiz-area").style.display    = "block";
+    renderQuestion(0);
+  });
+
+  document.getElementById("next-btn").addEventListener("click", () => {
+    if (isAutoMoving) return;
+    renderQuestion(currentQ + 1);
+  });
+
+  document.getElementById("check-order-btn").addEventListener("click", handleS2Check);
+
+  document.getElementById("reset-order-btn").addEventListener("click", () => {
+    if (isAutoMoving || currentAttempt >= 3) return;
+    const words = allQuestions[currentQ].data.sentence.split(" ");
+    orderAnswer = [];
+    orderBank   = shuffle([...words]);
+    renderChips();
+    hideFeedback();
+  });
+
+  document.getElementById("check-input-btn").addEventListener("click", handleS3SA);
+
+  document.getElementById("answer-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") handleS3SA();
+  });
+
+  document.getElementById("save-jpg-btn").addEventListener("click", saveJPG);
+
+  document.getElementById("retry-btn").addEventListener("click", () => {
+    document.getElementById("report-card").style.display  = "none";
+    document.getElementById("intro-screen").style.display = "block";
+    init();
+  });
+});
+</script>
+</body>
+</html>
